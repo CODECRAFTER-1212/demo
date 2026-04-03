@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, SlidersHorizontal, Loader, PackageOpen } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, Loader, PackageOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import axios from 'axios';
 import ListingCard from '../components/ListingCard';
 
@@ -44,6 +44,8 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [realListings, setRealListings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [isPriceOpen, setIsPriceOpen] = useState(false);
 
   const fetchListings = async () => {
     try {
@@ -111,13 +113,21 @@ export default function Home() {
       {/* Filters & Grid Section */}
       <div className="flex flex-col md:flex-row gap-8">
         {/* Sidebar Filters */}
-        <div className="w-full md:w-64 flex-shrink-0 space-y-6">
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center gap-2 mb-4 font-semibold text-gray-900">
-              <Filter className="h-5 w-5" />
-              <h2>Categories</h2>
-            </div>
-            <ul className="space-y-2">
+        <div className="w-full md:w-64 flex-shrink-0 space-y-4 md:space-y-6">
+          <div className="bg-white p-4 md:p-5 rounded-xl shadow-sm border border-gray-200">
+            <button 
+              onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+              className="w-full flex items-center justify-between font-bold text-gray-900 md:pointer-events-none focus:outline-none"
+            >
+              <div className="flex items-center gap-2">
+                <Filter className="h-5 w-5 text-blue-600" />
+                <h2 className="text-lg">Categories {activeCategory !== 'All' && <span className="md:hidden text-blue-600 text-xs ml-2 bg-blue-50 px-2 py-1 rounded-full">{activeCategory}</span>}</h2>
+              </div>
+              <div className="md:hidden text-gray-400">
+                {isCategoryOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              </div>
+            </button>
+            <ul className={`mt-4 space-y-1.5 ${isCategoryOpen ? 'block' : 'hidden'} md:block transition-all`}>
               {categories.map((cat) => (
                 <li key={cat}>
                   <button
@@ -134,18 +144,26 @@ export default function Home() {
             </ul>
           </div>
 
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center gap-2 mb-4 font-semibold text-gray-900">
-              <SlidersHorizontal className="h-5 w-5" />
-              <h2>Price Range</h2>
-            </div>
-            <div className="space-y-4">
-              <div className="flex gap-2 items-center">
-                <input type="number" placeholder="Min" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500" />
-                <span className="text-gray-500">-</span>
-                <input type="number" placeholder="Max" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500" />
+          <div className="bg-white p-4 md:p-5 rounded-xl shadow-sm border border-gray-200">
+            <button 
+              onClick={() => setIsPriceOpen(!isPriceOpen)}
+              className="w-full flex items-center justify-between font-bold text-gray-900 md:pointer-events-none focus:outline-none"
+            >
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="h-5 w-5 text-blue-600" />
+                <h2 className="text-lg">Price Range</h2>
               </div>
-              <button className="w-full bg-gray-100 text-gray-700 py-2 rounded-md text-sm font-medium hover:bg-gray-200 transition-colors">
+              <div className="md:hidden text-gray-400">
+                {isPriceOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              </div>
+            </button>
+            <div className={`mt-4 space-y-4 ${isPriceOpen ? 'block' : 'hidden'} md:block transition-all`}>
+              <div className="flex gap-2 items-center">
+                <input type="number" placeholder="Min" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                <span className="text-gray-500">-</span>
+                <input type="number" placeholder="Max" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+              </div>
+              <button className="w-full bg-blue-50 text-blue-600 py-2.5 rounded-lg text-sm font-bold hover:bg-blue-100 transition-colors">
                 Apply Filters
               </button>
             </div>

@@ -13,7 +13,7 @@ const generateToken = (id) => {
 // @access  Public
 const registerUser = async (req, res, next) => {
   try {
-    const { name, email, rollnumber, password, phone } = req.body;
+    const { name, email, rollnumber, password, phone, city, campus } = req.body;
 
     // Check if user exists
     const userExists = await User.findOne({ 
@@ -32,6 +32,8 @@ const registerUser = async (req, res, next) => {
       rollnumber,
       password,
       phone,
+      city,
+      campus,
     });
 
     if (user) {
@@ -41,6 +43,8 @@ const registerUser = async (req, res, next) => {
         email: user.email,
         rollnumber: user.rollnumber,
         phone: user.phone,
+        city: user.city,
+        campus: user.campus,
         role: user.role,
         token: generateToken(user._id),
       });
@@ -73,6 +77,8 @@ const loginUser = async (req, res, next) => {
         email: user.email,
         rollnumber: user.rollnumber,
         phone: user.phone,
+        city: user.city,
+        campus: user.campus,
         role: user.role,
         token: generateToken(user._id),
       });

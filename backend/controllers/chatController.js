@@ -24,4 +24,36 @@ const getMessages = async (req, res, next) => {
   }
 };
 
-module.exports = { getMessages, buildRoom };
+// @desc  Get all conversations for the logged-in user (latest message per room)
+// @route GET /api/chat/conversations
+// @access Private
+const getMyConversations = async (req, res, next) => {
+  try {
+    const userId = req.user._id.toString();
+
+    // Find all messages where user is sender or receiver
+    const messages = await Message.find({
+      $or: [{ sender: userId }, { receiver: userId }],
+    })
+      .populate('sender', 'name')
+      .populate('receiver', 'name')
+      .populate('listing', 'title images price')
+      .sort({ createdAt: -1 });
+
+    // Group by room — keep only latest message per room
+    const seen = new Set();
+    const conversations = [];
+    for (const msg of messages) {
+      if (!seen.has(msg.room)) {
+        seen.add(msg.room);
+        conversations.push(msg);
+      }
+    }
+
+    res.status(200).json({ conversations });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getMessages, getMyConversations, buildRoom };

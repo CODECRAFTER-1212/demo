@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { UploadCloud, CheckCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { UploadCloud, CheckCircle, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
 
 export default function CreateListing() {
@@ -71,7 +72,18 @@ export default function CreateListing() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto mt-8 mb-16">
+    <div className="max-w-3xl mx-auto mt-6 mb-16 px-4 sm:px-6 lg:px-8">
+      {/* Top Back Button */}
+      <Link 
+        to="/" 
+        className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 font-medium transition-colors mb-6"
+      >
+        <div className="bg-white p-2 rounded-full shadow-sm hover:shadow-md transition-shadow">
+          <ArrowLeft className="h-5 w-5" />
+        </div>
+        <span>Back to Home</span>
+      </Link>
+
       <div className="bg-white px-6 py-10 shadow-sm border border-gray-100 rounded-2xl sm:px-10">
         <div className="mb-8 border-b border-gray-200 pb-6">
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Post a New Listing</h1>
@@ -236,12 +248,12 @@ export default function CreateListing() {
           </div>
 
           <div className="pt-4 flex justify-end">
-            <button
-              type="button"
+            <Link
+              to="/"
               className="bg-white py-3 px-6 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Cancel
-            </button>
+            </Link>
             <button
               type="submit"
               disabled={isSubmitting}

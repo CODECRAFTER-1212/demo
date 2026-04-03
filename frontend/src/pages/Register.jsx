@@ -9,8 +9,10 @@ export default function Register() {
     name: '',
     email: '',
     rollnumber: '',
-    password: '',
     phone: '',
+    city: '',
+    campus: '',
+    password: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -118,6 +120,40 @@ export default function Register() {
                 onChange={handleChange}
               />
             </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                  City
+                </label>
+                <input
+                  id="city"
+                  name="city"
+                  type="text"
+                  required
+                  className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow"
+                  placeholder="e.g. Mumbai"
+                  value={formData.city}
+                  onChange={handleChange}
+                />
+              </div>
+              <div>
+                <label htmlFor="campus" className="block text-sm font-medium text-gray-700 mb-1">
+                  Campus
+                </label>
+                <input
+                  id="campus"
+                  name="campus"
+                  type="text"
+                  required
+                  className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow"
+                  placeholder="e.g. Main Campus"
+                  value={formData.campus}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password

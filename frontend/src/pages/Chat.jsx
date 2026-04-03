@@ -22,10 +22,10 @@ export default function Chat() {
   const socketRef = useRef(null);
   const bottomRef = useRef(null);
 
-  // Get logged-in user info from localStorage
-  const token = localStorage.getItem('token');
-  const userRaw = localStorage.getItem('user');
-  const currentUser = userRaw ? JSON.parse(userRaw) : null;
+  // Get logged-in user info from localStorage (saved as 'userInfo' by Login page)
+  const userInfoRaw = localStorage.getItem('userInfo');
+  const currentUser = userInfoRaw ? JSON.parse(userInfoRaw) : null;
+  const token = currentUser?.token || null;
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -58,7 +58,9 @@ export default function Chat() {
 
     const socket = io(BACKEND, {
       auth: { token },
-      transports: ['websocket'],
+      // Don't force websocket-only — let Socket.io start with polling then upgrade
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
     socketRef.current = socket;
@@ -73,7 +75,10 @@ export default function Chat() {
     });
 
     socket.on('disconnect', () => setConnected(false));
-    socket.on('connect_error', () => setConnected(false));
+    socket.on('connect_error', (err) => {
+      console.warn('Socket connect_error:', err.message);
+      setConnected(false);
+    });
 
     return () => {
       socket.disconnect();

@@ -7,6 +7,8 @@ import CreateListing from './pages/CreateListing';
 import ListingDetail from './pages/ListingDetail';
 import Dashboard from './pages/Dashboard';
 import Chat from './pages/Chat';
+import ChatInbox from './pages/ChatInbox';
+import Wishlist from './pages/Wishlist';
 
 function App() {
   return (
@@ -21,6 +23,9 @@ function App() {
           <Route path="/listing/:id" element={<ListingDetail />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/chat/:listingId/:sellerId" element={<Chat />} />
+          <Route path="/messages" element={<ChatInbox />} />
+          <Route path="/wishlist" element={<Wishlist />} />
+
         </Routes>
       </main>
       <footer className="bg-white border-t border-gray-200 py-8">

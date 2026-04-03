@@ -14,9 +14,30 @@ export default function ListingDetail() {
   const navigate = useNavigate();
 
   const handleContact = () => {
-    const sellerId = listing?.seller?._id || listing?.seller;
-    if (!sellerId) return;
-    navigate(`/chat/${listing._id || id}/${sellerId}`, {
+    // Dummy listings have no real seller — can't chat
+    if (listing?.isDummy) {
+      alert('Chat is not available for demo listings.');
+      return;
+    }
+    // Extract sellerId as a plain string (seller may be populated object or bare ObjectId)
+    const sellerId =
+      (typeof listing?.seller === 'object' && listing?.seller !== null
+        ? listing.seller._id
+        : listing?.seller
+      )?.toString();
+
+    const listingId = listing?._id?.toString() || id;
+
+    if (!sellerId || !listingId) return;
+
+    // Prevent chatting with yourself
+    const currentUser = JSON.parse(localStorage.getItem('userInfo') || 'null');
+    if (currentUser && currentUser._id === sellerId) {
+      alert('This is your own listing.');
+      return;
+    }
+
+    navigate(`/chat/${listingId}/${sellerId}`, {
       state: {
         listing,
         sellerName: listing?.seller?.name || 'Seller',
@@ -95,6 +116,12 @@ export default function ListingDetail() {
     ? new Date(listing.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
     : 'Unknown date';
 
+  const idStr = String(listing._id || listing.id || '');
+  const seedStr = idStr + String(listing.title || '');
+  const discountPercent = 15 + ((seedStr.charCodeAt(0) || 0) % 30) + (seedStr.length % 15);
+  const actualPrice = Number(listing.price || 0);
+  const originalPrice = Math.round(actualPrice * (1 + (discountPercent / 100)));
+
   return (
     <div className="mt-6 mb-12">
       {/* Back Link */}
@@ -137,7 +164,15 @@ export default function ListingDetail() {
                 <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight leading-tight">{listing.title}</h1>
               </div>
 
-              <p className="text-4xl font-black text-blue-600 mb-6">₹{listing.price}</p>
+              <div className="flex items-end gap-3 mb-6 pt-1">
+                <p className="text-5xl font-black text-gray-900 leading-none tracking-tight">₹{actualPrice.toLocaleString('en-IN')}</p>
+                <div className="flex flex-col pb-1 ml-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl font-semibold text-gray-400 line-through decoration-gray-300 leading-none">₹{originalPrice.toLocaleString('en-IN')}</span>
+                    <span className="text-xl uppercase font-black text-emerald-600 tracking-wide leading-none">{discountPercent}% Off</span>
+                  </div>
+                </div>
+              </div>
 
               <div className="flex flex-wrap gap-3 mb-8">
                 <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-blue-50 text-blue-700 border border-blue-100">
