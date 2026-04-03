@@ -7,6 +7,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please add a name'],
     },
+    rollnumber: {
+      type: String,
+      required: [true, 'Please add a roll number'],
+      unique: true,
+    },
     email: {
       type: String,
       required: [true, 'Please add an email'],

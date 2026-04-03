@@ -13,10 +13,12 @@ const generateToken = (id) => {
 // @access  Public
 const registerUser = async (req, res, next) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, rollnumber, password, phone } = req.body;
 
     // Check if user exists
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ 
+      $or: [{ email }, { rollnumber }] 
+    });
 
     if (userExists) {
       res.status(400);
@@ -27,6 +29,7 @@ const registerUser = async (req, res, next) => {
     const user = await User.create({
       name,
       email,
+      rollnumber,
       password,
       phone,
     });
@@ -36,6 +39,7 @@ const registerUser = async (req, res, next) => {
         _id: user.id,
         name: user.name,
         email: user.email,
+        rollnumber: user.rollnumber,
         phone: user.phone,
         role: user.role,
         token: generateToken(user._id),
@@ -54,16 +58,20 @@ const registerUser = async (req, res, next) => {
 // @access  Public
 const loginUser = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    // identifier can be email or rollnumber
+    const { identifier, password } = req.body;
 
-    // Check for user email
-    const user = await User.findOne({ email }).select('+password');
+    // Check for user by email or rollnumber
+    const user = await User.findOne({ 
+      $or: [{ email: identifier }, { rollnumber: identifier }] 
+    }).select('+password');
 
     if (user && (await user.matchPassword(password))) {
       res.json({
         _id: user.id,
         name: user.name,
         email: user.email,
+        rollnumber: user.rollnumber,
         phone: user.phone,
         role: user.role,
         token: generateToken(user._id),

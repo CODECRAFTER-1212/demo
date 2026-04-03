@@ -1,4 +1,5 @@
 const Listing = require('../models/Listing');
+const imagekit = require('../config/imagekit');
 
 // @desc    Create a listing
 // @route   POST /api/listings
@@ -8,9 +9,17 @@ const createListing = async (req, res, next) => {
     const { title, description, price, category, city, area } = req.body;
     let images = [];
     
-    // Cloudinary images
+    // ImageKit images
     if (req.files && req.files.length > 0) {
-      images = req.files.map((file) => file.path);
+      const uploadPromises = req.files.map((file) => {
+        return imagekit.upload({
+          file: file.buffer,
+          fileName: file.originalname,
+          folder: '/studentmart_listings'
+        });
+      });
+      const results = await Promise.all(uploadPromises);
+      images = results.map(result => result.url);
     } else if (req.body.images) {
       // In case URLs are passed directly (for testing/dummy data)
       images = Array.isArray(req.body.images) ? req.body.images : [req.body.images];
@@ -21,6 +30,9 @@ const createListing = async (req, res, next) => {
       throw new Error('Please append at least one image');
     }
 
+    // Real authenticated user ID
+    const sellerId = req.user.id;
+
     const listing = await Listing.create({
       title,
       description,
@@ -29,7 +41,8 @@ const createListing = async (req, res, next) => {
       images,
       city,
       area,
-      seller: req.user.id,
+      seller: sellerId,
+      status: 'approved', // Show it directly in the listings section without review for now
     });
 
     res.status(201).json(listing);
@@ -133,7 +146,15 @@ const updateListing = async (req, res, next) => {
 
     // Update images if new ones are uploaded
     if (req.files && req.files.length > 0) {
-      updateData.images = req.files.map((file) => file.path);
+      const uploadPromises = req.files.map((file) => {
+        return imagekit.upload({
+          file: file.buffer,
+          fileName: file.originalname,
+          folder: '/studentmart_listings'
+        });
+      });
+      const results = await Promise.all(uploadPromises);
+      updateData.images = results.map(result => result.url);
     }
 
     const updatedListing = await Listing.findByIdAndUpdate(

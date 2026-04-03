@@ -1,23 +1,32 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
+import axios from 'axios';
 
 export default function Register() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    rollnumber: '',
     password: '',
     phone: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
+    setErrorMsg('');
+    try {
+      await axios.post('http://localhost:5000/api/auth/register', formData);
       setIsLoading(false);
-      // alert('Account created!');
-    }, 1000);
+      navigate('/login');
+    } catch (error) {
+      setIsLoading(false);
+      setErrorMsg(error.response?.data?.message || 'Error occurred during registration');
+    }
   };
 
   const handleChange = (e) => {
@@ -38,6 +47,13 @@ export default function Register() {
             </Link>
           </p>
         </div>
+
+        {errorMsg && (
+          <div className="rounded-md bg-red-50 p-4 border border-red-200">
+            <h3 className="text-sm font-medium text-red-800">{errorMsg}</h3>
+          </div>
+        )}
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md space-y-4">
             <div>
@@ -71,6 +87,22 @@ export default function Register() {
                 onChange={handleChange}
               />
             </div>
+            <div>
+              <label htmlFor="rollnumber" className="block text-sm font-medium text-gray-700 mb-1">
+                Roll Number
+              </label>
+              <input
+                id="rollnumber"
+                name="rollnumber"
+                type="text"
+                required
+                className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow"
+                placeholder="e.g. 19CS01"
+                value={formData.rollnumber}
+                onChange={handleChange}
+              />
+            </div>
+
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                 Phone Number

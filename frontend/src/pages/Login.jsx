@@ -1,20 +1,32 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
+import axios from 'axios';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
+  const navigate = useNavigate();
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    // Mock API call
-    setTimeout(() => {
+    setErrorMsg('');
+
+    try {
+      const { data } = await axios.post('http://localhost:5000/api/auth/login', {
+        identifier,
+        password,
+      });
+      localStorage.setItem('userInfo', JSON.stringify(data));
       setIsLoading(false);
-      // alert('Logged in successfully!');
-    }, 1000);
+      navigate('/');
+    } catch (error) {
+      setIsLoading(false);
+      setErrorMsg(error.response?.data?.message || 'Invalid Credentials');
+    }
   };
 
   return (
@@ -31,22 +43,29 @@ export default function Login() {
             </Link>
           </p>
         </div>
+
+        {errorMsg && (
+          <div className="rounded-md bg-red-50 p-4 border border-red-200">
+            <h3 className="text-sm font-medium text-red-800">{errorMsg}</h3>
+          </div>
+        )}
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm space-y-4">
             <div>
-              <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 mb-1">
-                Email address
+              <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 mb-1">
+                Email or Roll Number
               </label>
               <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
+                id="identifier"
+                name="identifier"
+                type="text"
+                autoComplete="username"
                 required
                 className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-shadow"
-                placeholder="you@student.edu"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@student.edu or 19CS01"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
               />
             </div>
             <div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { UploadCloud, CheckCircle } from 'lucide-react';
+import axios from 'axios';
 
 export default function CreateListing() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -14,20 +15,59 @@ export default function CreateListing() {
     area: '',
   });
 
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [errorMsg, setErrorMsg] = useState('');
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleFileChange = (e) => {
+    setSelectedFiles(e.target.files);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(() => {
+    setErrorMsg('');
+
+    try {
+      const data = new FormData();
+      data.append('title', formData.title);
+      data.append('description', formData.description);
+      data.append('price', formData.price);
+      data.append('category', formData.category);
+      data.append('city', formData.city);
+      data.append('area', formData.area);
+
+      // Append all selected files under the key 'images', which is what multer expects
+      if (selectedFiles) {
+        for (let i = 0; i < selectedFiles.length; i++) {
+          data.append('images', selectedFiles[i]);
+        }
+      }
+
+      // Get token from local storage
+      const userInfoStr = localStorage.getItem('userInfo');
+      const token = userInfoStr ? JSON.parse(userInfoStr).token : '';
+
+      await axios.post('http://localhost:5000/api/listings', data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
+        },
+      });
+
       setIsSubmitting(false);
       setIsSuccess(true);
-      // Reset after success
       setTimeout(() => setIsSuccess(false), 3000);
       setFormData({ title: '', description: '', price: '', category: '', city: '', area: '' });
-    }, 1500);
+      setSelectedFiles([]);
+    } catch (error) {
+      setIsSubmitting(false);
+      console.error(error);
+      setErrorMsg(error.response?.data?.message || 'Error occurred while creating listing.');
+    }
   };
 
   return (
@@ -44,6 +84,12 @@ export default function CreateListing() {
           <div className="mb-8 rounded-lg bg-green-50 p-4 border border-green-200 flex items-center">
             <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
             <span className="text-sm font-medium text-green-800">Your listing has been submitted for review!</span>
+          </div>
+        )}
+
+        {errorMsg && (
+          <div className="mb-8 rounded-lg bg-red-50 p-4 border border-red-200 flex items-center">
+            <span className="text-sm font-medium text-red-800">{errorMsg}</span>
           </div>
         )}
 
@@ -175,9 +221,11 @@ export default function CreateListing() {
                   <div className="flex text-sm text-gray-600 justify-center">
                     <label htmlFor="file-upload" className="relative cursor-pointer bg-transparent rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
                       <span>Upload photos</span>
-                      <input id="file-upload" name="file-upload" type="file" className="sr-only" multiple accept="image/*" />
+                      <input id="file-upload" name="file-upload" type="file" className="sr-only" multiple accept="image/*" onChange={handleFileChange} />
                     </label>
-                    <p className="pl-1">or drag and drop</p>
+                    <p className="pl-1">
+                      {selectedFiles.length > 0 ? `(${selectedFiles.length} files selected)` : 'or drag and drop'}
+                    </p>
                   </div>
                   <p className="text-xs text-gray-500">
                     PNG, JPG, GIF up to 5MB

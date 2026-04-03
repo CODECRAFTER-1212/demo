@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Search, Filter, SlidersHorizontal } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Filter, SlidersHorizontal, Loader } from 'lucide-react';
+import axios from 'axios';
 import ListingCard from '../components/ListingCard';
 
 // Dummy data
@@ -24,7 +25,7 @@ const dummyListings = [
   },
   {
     id: 3,
-    title: 'Drafting Table',
+    title: 'Drafting Table with Angle',
     price: 80,
     category: 'Furniture',
     city: 'Pune',
@@ -33,7 +34,7 @@ const dummyListings = [
   },
   {
     id: 4,
-    title: 'MacBook Air M1',
+    title: 'MacBook Air M1 2020',
     price: 850,
     category: 'Electronics',
     city: 'Pune',
@@ -51,23 +52,270 @@ const dummyListings = [
   },
   {
     id: 6,
-    title: 'Mini Fridge for Dorm',
+    title: 'Mini Fridge for Dorm Room',
     price: 120,
     category: 'Appliances',
     city: 'Delhi',
     area: 'North Campus',
     image: 'https://images.unsplash.com/photo-1584568694244-14fbdf83bd30?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 7,
+    title: 'Anatomy Atlas Gray\'s 42nd Ed',
+    price: 65,
+    category: 'Books',
+    city: 'Delhi',
+    area: 'South Extension',
+    image: 'https://images.unsplash.com/photo-1581637685570-2f9a07b5d5d9?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 8,
+    title: 'Geometry Box Set Premium',
+    price: 12,
+    category: 'Stationery',
+    city: 'Bangalore',
+    area: 'Jayanagar',
+    image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 9,
+    title: 'Stethoscope Littmann Classic',
+    price: 35,
+    category: 'Medical',
+    city: 'Chennai',
+    area: 'Adyar',
+    image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 10,
+    title: 'Physics Textbook HC Verma',
+    price: 28,
+    category: 'Books',
+    city: 'Kolkata',
+    area: 'Salt Lake',
+    image: 'https://images.unsplash.com/photo-1526042211458-1a5ddbc18d62?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 11,
+    title: 'Planimeter Digital Model',
+    price: 95,
+    category: 'Surveying',
+    city: 'Pune',
+    area: 'Hinjewadi',
+    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 12,
+    title: 'BP Apparatus Digital',
+    price: 22,
+    category: 'Medical',
+    city: 'Mumbai',
+    area: 'Borivali',
+    image: 'https://images.unsplash.com/photo-1582774009625-cea822a594eb?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 13,
+    title: 'AutoCAD Student License',
+    price: 180,
+    category: 'Software',
+    city: 'Delhi',
+    area: 'Rohini',
+    image: 'https://images.unsplash.com/photo-1517433456452-d31df22ac7a5?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 14,
+    title: 'Organic Chemistry Morrison',
+    price: 52,
+    category: 'Books',
+    city: 'Hyderabad',
+    area: 'Kukatpally',
+    image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 15,
+    title: 'Theodolite Survey Instrument',
+    price: 450,
+    category: 'Surveying',
+    city: 'Bhopal',
+    area: 'MP Nagar',
+    image: 'https://images.unsplash.com/photo-1558618047-3c8c76fddfb8?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 16,
+    title: 'Study Desk Lamp LED',
+    price: 18,
+    category: 'Electronics',
+    city: 'Bangalore',
+    area: 'Whitefield',
+    image: 'https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 17,
+    title: 'MCQ Book AIEEE/JEE',
+    price: 22,
+    category: 'Books',
+    city: 'Jaipur',
+    area: 'Malviya Nagar',
+    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 18,
+    title: 'Surgical Kit Student Grade',
+    price: 40,
+    category: 'Medical',
+    city: 'Chennai',
+    area: 'T Nagar',
+    image: 'https://images.unsplash.com/photo-1582731489-c549de2f90c8?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 19,
+    title: 'Graphing Calculator TI-84',
+    price: 110,
+    category: 'Electronics',
+    city: 'Mumbai',
+    area: 'Thane',
+    image: 'https://images.unsplash.com/photo-1610945262585-0f49f54e7aa8?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 20,
+    title: 'Pathology Robbins 10th Ed',
+    price: 75,
+    category: 'Books',
+    city: 'Delhi',
+    area: 'Lajpat Nagar',
+    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 21,
+    title: 'Total Station Mini',
+    price: 320,
+    category: 'Surveying',
+    city: 'Nagpur',
+    area: 'Sitabuldi',
+    image: 'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 22,
+    title: 'Whiteboard 4x3 Feet',
+    price: 35,
+    category: 'Furniture',
+    city: 'Indore',
+    area: 'Vijay Nagar',
+    image: 'https://images.unsplash.com/photo-1588064627675-25d5168b12f5?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 23,
+    title: 'NEET Guide MTG 2026',
+    price: 38,
+    category: 'Books',
+    city: 'Lucknow',
+    area: 'Gomti Nagar',
+    image: 'https://images.unsplash.com/photo-1520342868574-5fa3804e551c?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 24,
+    title: 'Glucometer Accu-Chek',
+    price: 28,
+    category: 'Medical',
+    city: 'Pune',
+    area: 'Camp',
+    image: 'https://images.unsplash.com/photo-1603353853248-ce1c3e95922e?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 25,
+    title: 'Strength of Materials Book',
+    price: 32,
+    category: 'Books',
+    city: 'Ahmedabad',
+    area: 'Navrangpura',
+    image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 26,
+    title: 'Laboratory Coat White',
+    price: 18,
+    category: 'Apparel',
+    city: 'Coimbatore',
+    area: 'RS Puram',
+    image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 27,
+    title: 'Digital Vernier Caliper',
+    price: 42,
+    category: 'Tools',
+    city: 'Bhopal',
+    area: 'Arera Colony',
+    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 28,
+    title: 'Microscope Student Grade',
+    price: 85,
+    category: 'Medical',
+    city: 'Kanpur',
+    area: 'Govind Nagar',
+    image: 'https://images.unsplash.com/photo-1547658719-da2b848c1a4f?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 29,
+    title: 'Engineering Mathematics B.S.',
+    price: 48,
+    category: 'Books',
+    city: 'Chandigarh',
+    area: 'Sector 17',
+    image: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 30,
+    title: 'Otoscope Diagnostic Set',
+    price: 55,
+    category: 'Medical',
+    city: 'Surat',
+    area: 'Adajan',
+    image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&q=80&w=800'
   }
 ];
 
-const categories = ['All', 'Books', 'Electronics', 'Furniture', 'Stationery', 'Appliances'];
+const categories = ['All', 'Books', 'Electronics', 'Furniture', 'Stationery', 'Appliances', 'Medical', 'Surveying', 'Software', 'Apparel', 'Tools'];
 
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+  const [listings, setListings] = useState(dummyListings);
+  const [isLoading, setIsLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
+
+  const fetchListings = async () => {
+    try {
+      const { data } = await axios.get('http://localhost:5000/api/listings');
+      const apiListings = data.listings || [];
+      // Show real DB listings first, then dummy data
+      setListings([...apiListings, ...dummyListings]);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error("Failed to fetch listings", error);
+      setListings(dummyListings);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Initial fetch
+    fetchListings();
+
+    // Auto-poll every 10 seconds for new listings
+    const interval = setInterval(() => {
+      fetchListings();
+    }, 10000);
+
+    // Cleanup on unmount
+    return () => clearInterval(interval);
+  }, []);
 
   // Filter logic
-  const filteredListings = dummyListings.filter((listing) => {
+  const filteredListings = listings.filter((listing) => {
     const matchesSearch = listing.title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = activeCategory === 'All' || listing.category === activeCategory;
     return matchesSearch && matchesCategory;
@@ -83,7 +331,7 @@ export default function Home() {
         <p className="text-blue-100 text-lg sm:text-xl mb-8 max-w-2xl mx-auto">
           The ultimate marketplace for students. Find cheap textbooks, electronics, and dorm essentials.
         </p>
-        
+
         <div className="max-w-2xl mx-auto flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -117,11 +365,10 @@ export default function Home() {
                 <li key={cat}>
                   <button
                     onClick={() => setActiveCategory(cat)}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                      activeCategory === cat 
-                        ? 'bg-blue-50 text-blue-700 font-medium' 
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${activeCategory === cat
+                      ? 'bg-blue-50 text-blue-700 font-medium'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
                   >
                     {cat}
                   </button>
@@ -129,7 +376,7 @@ export default function Home() {
               ))}
             </ul>
           </div>
-          
+
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
             <div className="flex items-center gap-2 mb-4 font-semibold text-gray-900">
               <SlidersHorizontal className="h-5 w-5" />
@@ -154,22 +401,32 @@ export default function Home() {
             <h2 className="text-xl font-bold text-gray-900">
               {activeCategory === 'All' ? 'Recent Listings' : `${activeCategory} Listings`}
             </h2>
-            <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200">
-              {filteredListings.length} results
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse inline-block"></span>
+                Live
+              </span>
+              <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200">
+                {filteredListings.length} results
+              </span>
+            </div>
           </div>
 
-          {filteredListings.length > 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center py-20 text-blue-600">
+              <Loader className="animate-spin h-8 w-8" />
+            </div>
+          ) : filteredListings.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredListings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
+                <ListingCard key={listing._id || listing.id} listing={listing} />
               ))}
             </div>
           ) : (
             <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
               <h3 className="text-lg font-medium text-gray-900">No listings found</h3>
               <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filters.</p>
-              <button 
+              <button
                 onClick={() => { setSearchTerm(''); setActiveCategory('All'); }}
                 className="mt-4 text-sm font-medium text-blue-600 hover:text-blue-500"
               >

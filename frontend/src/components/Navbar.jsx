@@ -1,9 +1,17 @@
-import { Link } from 'react-router-dom';
-import { ShoppingBag, User, PlusCircle, LogIn } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ShoppingBag, User, PlusCircle, LogIn, LogOut } from 'lucide-react';
 
 export default function Navbar() {
-  // Mock auth state
-  const isAuthenticated = true;
+  const navigate = useNavigate();
+  // Get auth state from local storage
+  const userInfoStr = localStorage.getItem('userInfo');
+  const user = userInfoStr ? JSON.parse(userInfoStr) : null;
+  const isAuthenticated = !!user;
+
+  const handleLogout = () => {
+    localStorage.removeItem('userInfo');
+    navigate('/login');
+  };
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
@@ -32,6 +40,13 @@ export default function Navbar() {
                 >
                   <User className="h-6 w-6" />
                 </Link>
+                <button
+                  onClick={handleLogout}
+                  className="inline-flex items-center justify-center p-2 rounded-full text-red-500 hover:text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-red-500 transition-colors"
+                  title="Logout"
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
               </>
             ) : (
               <Link 
