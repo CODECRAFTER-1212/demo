@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import CreateListing from './pages/CreateListing';
 import ListingDetail from './pages/ListingDetail';
 import Dashboard from './pages/Dashboard';
+import Chat from './pages/Chat';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/create-listing" element={<CreateListing />} />
           <Route path="/listing/:id" element={<ListingDetail />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/chat/:listingId/:sellerId" element={<Chat />} />
         </Routes>
       </main>
       <footer className="bg-white border-t border-gray-200 py-8">
