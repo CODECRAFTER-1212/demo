@@ -3,8 +3,7 @@ import { useParams, useLocation, Link, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import axios from 'axios';
 import { ArrowLeft, Send, MessageCircle, ShieldCheck, Loader, Lock } from 'lucide-react';
-
-const BACKEND = 'http://localhost:5000';
+import BACKEND from '../config';
 const POLL_INTERVAL = 3000; // Poll every 3 seconds as fallback
 
 export default function Chat() {
