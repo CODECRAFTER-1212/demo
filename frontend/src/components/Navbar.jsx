@@ -33,6 +33,11 @@ export default function Navbar() {
     return () => window.removeEventListener('profileUpdated', handleProfileUpdate);
   }, []);
 
+  // Re-sync user from localStorage on every route change (e.g. after login/register)
+  useEffect(() => {
+    setUser(getUserInfo());
+  }, [location]);
+
   const handleLogout = () => {
     localStorage.removeItem('userInfo');
     navigate('/login');

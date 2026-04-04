@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { CheckCircle2, ShieldCheck, Mail, Upload, Camera, FileText, Loader } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, Mail, Upload, Camera, FileText, Loader, Pencil, X, Check } from 'lucide-react';
 
 export default function ProfileCompletion() {
   const navigate = useNavigate();
@@ -27,6 +27,12 @@ export default function ProfileCompletion() {
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
   const [campus, setCampus] = useState('');
+
+  // Basic Info Edit Mode
+  const [isEditingBasic, setIsEditingBasic] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [isSavingBasic, setIsSavingBasic] = useState(false);
 
   // File States
   const [profilePicFile, setProfilePicFile] = useState(null);
@@ -124,8 +130,6 @@ export default function ProfileCompletion() {
     setIsSaving(true);
     try {
       const formData = new FormData();
-      if (name !== profile.name) formData.append('name', name);
-      if (phone !== profile.phone) formData.append('phone', phone);
       if (city !== profile.city) formData.append('city', city);
       if (campus !== profile.campus) formData.append('campus', campus);
 
@@ -149,6 +153,40 @@ export default function ProfileCompletion() {
       console.error(err);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleEditBasic = () => {
+    setEditName(name);
+    setEditPhone(phone);
+    setIsEditingBasic(true);
+  };
+
+  const handleCancelBasic = () => {
+    setIsEditingBasic(false);
+  };
+
+  const handleSaveBasic = async () => {
+    setIsSavingBasic(true);
+    try {
+      const formData = new FormData();
+      if (editName !== profile.name) formData.append('name', editName);
+      if (editPhone !== profile.phone) formData.append('phone', editPhone);
+
+      await axios.put('http://localhost:5000/api/profile', formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      await fetchProfile();
+      setIsEditingBasic(false);
+      showToast('Basic info updated successfully!', 'success');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to update. Please try again.', 'error');
+    } finally {
+      setIsSavingBasic(false);
     }
   };
 
@@ -206,16 +244,70 @@ export default function ProfileCompletion() {
         {/* Basic Details */}
         <div className="md:col-span-2 space-y-8">
           <form className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 space-y-6" onSubmit={handleSaveProfile}>
-            <h2 className="text-xl font-bold border-b pb-4">Basic Information (20%)</h2>
+            {/* Basic Information Header */}
+            <div className="flex items-center justify-between border-b pb-4">
+              <h2 className="text-xl font-bold">Basic Information (20%)</h2>
+              {!isEditingBasic ? (
+                <button
+                  type="button"
+                  onClick={handleEditBasic}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCancelBasic}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveBasic}
+                    disabled={isSavingBasic}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60 rounded-lg transition-colors"
+                  >
+                    {isSavingBasic ? <Loader className="animate-spin h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}
+                    {isSavingBasic ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              )}
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                <input type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 p-2 border" />
+                {isEditingBasic ? (
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={e => setEditName(e.target.value)}
+                    className="mt-1 block w-full rounded-md border-blue-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white p-2 border-2 ring-2 ring-blue-100"
+                    placeholder="Enter your full name"
+                    autoFocus
+                  />
+                ) : (
+                  <div className="mt-1 block w-full rounded-md bg-gray-50 p-2 border border-gray-200 text-gray-800 font-medium">{name || <span className="text-gray-400 font-normal">Not set</span>}</div>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-                <input type="text" value={phone} onChange={e => setPhone(e.target.value)} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 p-2 border" />
+                {isEditingBasic ? (
+                  <input
+                    type="text"
+                    value={editPhone}
+                    onChange={e => setEditPhone(e.target.value)}
+                    className="mt-1 block w-full rounded-md border-blue-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white p-2 border-2 ring-2 ring-blue-100"
+                    placeholder="Enter your phone number"
+                  />
+                ) : (
+                  <div className="mt-1 block w-full rounded-md bg-gray-50 p-2 border border-gray-200 text-gray-800 font-medium">{phone || <span className="text-gray-400 font-normal">Not set</span>}</div>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Email Address</label>
