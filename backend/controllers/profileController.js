@@ -65,22 +65,21 @@ exports.sendOTP = async (req, res, next) => {
 
     console.log(`[DEBUG] Generated OTP for ${user.email}: ${otpCode}`);
 
-    try {
-      if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-        await transporter.sendMail({
-          from: process.env.SMTP_USER,
-          to: user.email,
-          subject: 'StudentMart - Email Verification OTP',
-          text: `Your OTP for email verification is ${otpCode}. It will expire in 5 minutes. Do not share this with anyone.`,
-        });
-      } else {
-        console.log('SMTP Config missing, skipping actual email send. Check server console for OTP.');
-      }
-    } catch (emailErr) {
-      console.log('Failed to send email:', emailErr.message);
+    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+      // Send email in background so frontend isn't blocked by Render's free tier SMTP constraints
+      transporter.sendMail({
+        from: process.env.SMTP_USER,
+        to: user.email,
+        subject: 'StudentMart - Email Verification OTP',
+        text: `Your OTP for email verification is ${otpCode}. It will expire in 5 minutes. Do not share this with anyone.`,
+      }).catch(emailErr => {
+        console.log('Failed to send email:', emailErr.message);
+      });
+    } else {
+      console.log('SMTP Config missing, skipping actual email send. Check server console for OTP.');
     }
 
-    res.json({ message: 'OTP sent successfully.' });
+    res.json({ message: 'OTP sent successfully. If you did not receive it, check the server console (Logs).' });
   } catch (err) {
     next(err);
   }
