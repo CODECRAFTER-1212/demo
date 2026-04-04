@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -13,6 +13,9 @@ import Wishlist from './pages/Wishlist';
 import ProfileCompletion from './pages/ProfileCompletion';
 
 function App() {
+  const location = useLocation();
+  const isHome = location.pathname === '/';
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -31,7 +34,7 @@ function App() {
 
         </Routes>
       </main>
-      <Footer />
+      {isHome && <Footer />}
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { CheckCircle2, ShieldCheck, Mail, Upload, Camera, FileText, Loader, Pencil, X, Check } from 'lucide-react';
+import { createWorker } from 'tesseract.js';
+import { CheckCircle2, ShieldCheck, Mail, Upload, Camera, FileText, Loader, Pencil, X, Check, ScanLine, AlertCircle } from 'lucide-react';
 
 export default function ProfileCompletion() {
   const navigate = useNavigate();
@@ -44,6 +45,10 @@ export default function ProfileCompletion() {
   const [collegeIdFile, setCollegeIdFile] = useState(null);
   const [collegeIdPreview, setCollegeIdPreview] = useState(null);
 
+  // College ID OCR State
+  const [collegeIdScanStatus, setCollegeIdScanStatus] = useState('idle'); // idle | scanning | verified | mismatch
+  const [collegeIdScanMsg, setCollegeIdScanMsg] = useState('');
+
   // OTP State
   const [otpStep, setOtpStep] = useState(0); // 0: not started, 1: sent, 2: verified
   const [otp, setOtp] = useState('');
@@ -81,6 +86,12 @@ export default function ProfileCompletion() {
 
     } catch (error) {
       console.error(error);
+      // If token is invalid/expired (401), clear session and redirect to login
+      if (error.response?.status === 401) {
+        localStorage.removeItem('userInfo');
+        navigate('/login');
+        return;
+      }
       alert('Failed to load profile');
     } finally {
       setIsLoading(false);
@@ -114,6 +125,54 @@ export default function ProfileCompletion() {
       alert(err.response?.data?.message || 'Invalid OTP');
     } finally {
       setOtpLoading(false);
+    }
+  };
+
+  const handleCollegeIdChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Set preview
+    const previewUrl = URL.createObjectURL(file);
+    setCollegeIdPreview(previewUrl);
+    setCollegeIdFile(null); // reset until verified
+    setCollegeIdScanStatus('scanning');
+    setCollegeIdScanMsg('Scanning your College ID...');
+
+    try {
+      const worker = await createWorker('eng');
+      const { data: { text } } = await worker.recognize(file);
+      await worker.terminate();
+
+      const scannedText = text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
+
+      // Get name and rollnumber to match
+      const profileName = (profile?.name || name || '').toLowerCase().trim();
+      const profileRoll = (profile?.rollnumber || '').toLowerCase().trim();
+
+      // Check: at least first word of name must appear, and roll number must appear
+      const firstNameWord = profileName.split(' ')[0];
+      const nameFound = firstNameWord.length > 2 && scannedText.includes(firstNameWord);
+      const rollFound = profileRoll.length > 0 && scannedText.replace(/\s/g, '').includes(profileRoll.replace(/\s/g, ''));
+
+      if (nameFound && rollFound) {
+        setCollegeIdFile(file);
+        setCollegeIdScanStatus('verified');
+        setCollegeIdScanMsg(`✅ Verified! Name & Roll Number matched.`);
+      } else {
+        setCollegeIdPreview(null);
+        setCollegeIdFile(null);
+        let missing = [];
+        if (!nameFound) missing.push('Name');
+        if (!rollFound) missing.push('Roll Number');
+        setCollegeIdScanStatus('mismatch');
+        setCollegeIdScanMsg(`❌ ${missing.join(' & ')} not found on this ID. Please upload your own College ID.`);
+      }
+    } catch (err) {
+      console.error('OCR Error:', err);
+      setCollegeIdScanStatus('mismatch');
+      setCollegeIdScanMsg('⚠️ Could not scan image. Please upload a clear photo of your College ID.');
+      setCollegeIdPreview(null);
     }
   };
 
@@ -337,20 +396,58 @@ export default function ProfileCompletion() {
               {/* College ID */}
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">College ID Card (20%)</label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center relative overflow-hidden bg-gray-50 hover:bg-gray-100 transition-colors">
-                  {collegeIdPreview ? (
+
+                {/* Scan Status Banner */}
+                {collegeIdScanStatus === 'scanning' && (
+                  <div className="mb-2 flex items-center gap-2 text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-sm font-medium">
+                    <Loader className="animate-spin h-4 w-4" />
+                    <ScanLine className="h-4 w-4" />
+                    Scanning ID card... Please wait
+                  </div>
+                )}
+                {collegeIdScanStatus === 'verified' && (
+                  <div className="mb-2 flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-sm font-medium">
+                    <CheckCircle2 className="h-4 w-4" />
+                    {collegeIdScanMsg}
+                  </div>
+                )}
+                {collegeIdScanStatus === 'mismatch' && (
+                  <div className="mb-2 flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm font-medium">
+                    <AlertCircle className="h-4 w-4" />
+                    {collegeIdScanMsg}
+                  </div>
+                )}
+
+                <div className={`border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center relative overflow-hidden transition-colors ${
+                  collegeIdScanStatus === 'verified' ? 'border-green-400 bg-green-50' :
+                  collegeIdScanStatus === 'mismatch' ? 'border-red-300 bg-red-50' :
+                  collegeIdScanStatus === 'scanning' ? 'border-blue-300 bg-blue-50' :
+                  'border-gray-300 bg-gray-50 hover:bg-gray-100'
+                }`}>
+                  {collegeIdScanStatus === 'scanning' ? (
+                    <div className="flex flex-col items-center gap-2 py-2">
+                      <ScanLine className="h-8 w-8 text-blue-400 animate-pulse" />
+                      <span className="text-sm text-blue-600 font-medium">Reading ID card with OCR...</span>
+                    </div>
+                  ) : collegeIdPreview && collegeIdScanStatus === 'verified' ? (
                     <div className="flex items-center gap-4 w-full">
                       <div className="w-16 h-12 bg-gray-200 rounded shrink-0 overflow-hidden text-xs flex items-center justify-center">
                         <img src={collegeIdPreview} className="object-cover h-full w-full" />
                       </div>
-                      <span className="text-sm font-medium text-green-600 flex items-center gap-1"><CheckCircle2 className="h-4 w-4" /> Document Ready</span>
-                      <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileChange(e, setCollegeIdFile, setCollegeIdPreview)} />
+                      <div>
+                        <span className="text-sm font-medium text-green-600 flex items-center gap-1">
+                          <CheckCircle2 className="h-4 w-4" /> College ID Verified
+                        </span>
+                        <p className="text-xs text-gray-500 mt-0.5">Click to replace</p>
+                      </div>
+                      <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleCollegeIdChange} />
                     </div>
                   ) : (
                     <>
                       <FileText className="h-8 w-8 text-gray-400 mb-2" />
                       <span className="text-sm text-gray-500 font-medium">Click to upload College ID</span>
-                      <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileChange(e, setCollegeIdFile, setCollegeIdPreview)} />
+                      <span className="text-xs text-gray-400 mt-1">Will scan & verify your name + roll number</span>
+                      <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleCollegeIdChange} />
                     </>
                   )}
                 </div>
