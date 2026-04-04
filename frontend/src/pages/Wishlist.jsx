@@ -35,10 +35,10 @@ export default function Wishlist() {
 
   return (
     <div className="max-w-6xl mx-auto mt-6 mb-16 px-4 sm:px-6 lg:px-8">
-      
+
       {/* Top Back Button */}
-      <button 
-        onClick={() => navigate(-1)} 
+      <button
+        onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-gray-500 hover:text-gray-900 font-medium mb-4 transition-colors"
       >
         <div className="bg-white p-2 rounded-full shadow-sm hover:shadow-md transition-shadow">
@@ -48,8 +48,8 @@ export default function Wishlist() {
       </button>
 
       {/* Hero Banner */}
-      <div className="relative bg-gradient-to-r from-[#FF3366] via-[#FF2B5E] to-[#E90042] rounded-[32px] p-8 sm:p-10 shadow-lg overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        
+      <div className="relative bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 rounded-[32px] p-8 sm:p-10 shadow-lg overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+
         {/* Decorative large faint heart in background */}
         <Heart className="absolute -right-10 -bottom-20 h-96 w-96 text-white opacity-10 fill-white rotate-12 pointer-events-none" />
 
@@ -62,21 +62,21 @@ export default function Wishlist() {
               My Favorites
             </h1>
           </div>
-          <p className="text-pink-100 font-medium text-lg">
+          <p className="text-blue-100 font-medium text-lg">
             You Have <span className="text-white font-bold underline decoration-2 underline-offset-4 mx-1">{wishlist.length}</span> Items You Love
           </p>
         </div>
 
         <div className="relative z-10 flex flex-wrap items-center gap-4 w-full md:w-auto">
-          <Link 
-            to="/" 
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white text-[#FF3366] px-6 py-3 rounded-full font-bold text-sm hover:bg-pink-50 transition-colors shadow-sm"
+          <Link
+            to="/"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-full font-bold text-sm hover:bg-blue-50 transition-colors shadow-sm"
           >
             <ShoppingBag className="h-4 w-4" />
             Keep Browsing
           </Link>
           {wishlist.length > 0 && (
-            <button 
+            <button
               onClick={clearWishlist}
               className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-transparent border border-white/40 text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-white/10 hover:border-white transition-colors"
             >
@@ -91,8 +91,8 @@ export default function Wishlist() {
       <div className="mt-10">
         {wishlist.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm">
-            <div className="bg-pink-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-5">
-              <Heart className="h-12 w-12 text-[#FF3366] opacity-50" />
+            <div className="bg-blue-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-5">
+              <Heart className="h-12 w-12 text-blue-500 opacity-50" />
             </div>
             <h3 className="text-xl font-extrabold text-gray-900">It's pretty quiet here...</h3>
             <p className="text-gray-500 mt-2">Go ahead and save items you plan to buy later!</p>
@@ -102,21 +102,21 @@ export default function Wishlist() {
             {wishlist.map((item) => {
               const id = item._id || item.id;
               const imgUrl = item.images?.[0] || item.image;
-              
+
               const seedStr = String(id) + String(item.title);
               const discountPercent = 15 + (seedStr.charCodeAt(0) % 30) + (seedStr.length % 15);
               const actualPrice = Number(item.price);
               const originalPrice = Math.round(actualPrice * (1 + (discountPercent / 100)));
-              
+
               return (
                 <div key={id} className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col group">
-                  
+
                   {/* Image Area */}
                   <div className="relative h-56 w-full bg-gray-100 overflow-hidden p-3">
-                    <img 
-                      src={imgUrl} 
-                      alt={item.title} 
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                    <img
+                      src={imgUrl}
+                      alt={item.title}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     {/* Category Label Overlay */}
                     <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full text-[10px] font-black text-gray-800 tracking-wider uppercase flex items-center gap-1.5 shadow-sm border border-gray-100">
@@ -124,7 +124,7 @@ export default function Wishlist() {
                       {item.category || 'Item'}
                     </div>
                   </div>
-                  
+
                   {/* Content Area */}
                   <div className="p-6 flex flex-col flex-grow">
                     <div className="flex justify-between items-start gap-4 mb-2">
@@ -146,19 +146,19 @@ export default function Wishlist() {
                       <MapPin className="h-3.5 w-3.5 mr-1 shrink-0" />
                       <span className="truncate">{item.city || 'Location'}, {item.area || 'N/A'}</span>
                     </div>
-                    
+
                     {/* Actions */}
                     <div className="mt-auto flex items-center gap-3">
-                      <Link 
+                      <Link
                         to={`/listing/${id}`}
                         state={item.isDummy ? { dummyListing: item, imageUrl: imgUrl } : undefined}
                         className="flex-1 bg-[#1A1F2C] hover:bg-black text-white font-bold py-3.5 rounded-xl text-center text-sm transition-colors shadow-sm"
                       >
                         View
                       </Link>
-                      <button 
+                      <button
                         onClick={() => removeFromWishlist(id)}
-                        className="bg-[#FFF0F4] hover:bg-[#FFE0E8] text-[#FF3366] p-3.5 rounded-xl transition-colors shrink-0"
+                        className="bg-blue-50 hover:bg-blue-100 text-blue-600 p-3.5 rounded-xl transition-colors shrink-0"
                         title="Remove"
                       >
                         <Trash2 className="h-5 w-5" />

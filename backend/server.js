@@ -15,6 +15,8 @@ const authRoutes = require('./routes/authRoutes');
 const listingRoutes = require('./routes/listingRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const profileRoutes = require('./routes/profileRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
 
 // Connect to database
 connectDB();
@@ -44,6 +46,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/listings', listingRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // ─── Socket.io ──────────────────────────────────────────────
 io.use((socket, next) => {

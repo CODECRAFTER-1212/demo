@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, Tag, ShieldCheck, Phone, MessageCircle, Loader, AlertCircle, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
+import { Star, Trash2, Edit } from 'lucide-react';
 
 export default function ListingDetail() {
   const { id } = useParams();
@@ -11,7 +12,17 @@ export default function ListingDetail() {
   const [error, setError] = useState(null);
   const [activeImage, setActiveImage] = useState(0);
 
+  // Reviews State
+  const [reviews, setReviews] = useState([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [userReview, setUserReview] = useState(null);
+
   const navigate = useNavigate();
+  const currentUser = JSON.parse(localStorage.getItem('userInfo') || 'null');
 
   const handleContact = () => {
     // Dummy listings have no real seller — can't chat
@@ -31,7 +42,6 @@ export default function ListingDetail() {
     if (!sellerId || !listingId) return;
 
     // Prevent chatting with yourself
-    const currentUser = JSON.parse(localStorage.getItem('userInfo') || 'null');
     if (currentUser && currentUser._id === sellerId) {
       alert('This is your own listing.');
       return;
@@ -81,6 +91,96 @@ export default function ListingDetail() {
 
     if (id) fetchListing();
   }, [id, location.state]);
+
+  // Fetch Reviews
+  useEffect(() => {
+    if (!listing || listing.isDummy) return;
+    const sellerId = (typeof listing.seller === 'object' ? listing.seller._id : listing.seller)?.toString();
+    if (!sellerId) return;
+
+    const fetchRev = async () => {
+      try {
+        setIsLoadingReviews(true);
+        const { data } = await axios.get(`http://localhost:5000/api/reviews/${sellerId}`);
+        setReviews(data);
+        if (currentUser) {
+          const myRev = data.find(r => r.reviewer._id === currentUser._id);
+          if (myRev) setUserReview(myRev);
+        }
+      } catch (err) {
+        console.error('Failed to load reviews');
+      } finally {
+        setIsLoadingReviews(false);
+      }
+    };
+    fetchRev();
+  }, [listing]);
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    setSubmittingReview(true);
+    const sellerId = (typeof listing.seller === 'object' ? listing.seller._id : listing.seller)?.toString();
+    
+    try {
+      const headers = { Authorization: `Bearer ${currentUser?.token}` };
+      if (userReview) {
+        // Update review
+        const { data } = await axios.put(`http://localhost:5000/api/reviews/${userReview._id}`, {
+          rating: reviewRating,
+          comment: reviewComment
+        }, { headers });
+        setReviews(reviews.map(r => r._id === data._id ? { ...data, reviewer: currentUser } : r));
+        setUserReview(data);
+      } else {
+        // Create review
+        const { data } = await axios.post(`http://localhost:5000/api/reviews/${sellerId}`, {
+          rating: reviewRating,
+          comment: reviewComment
+        }, { headers });
+        // Refresh exactly to grab populated reviewer
+        const fetchAll = await axios.get(`http://localhost:5000/api/reviews/${sellerId}`);
+        setReviews(fetchAll.data);
+        setUserReview(fetchAll.data.find(r => r.reviewer._id === currentUser._id));
+        // Soft update local seller score for immediate UI feedback
+        setListing({
+          ...listing,
+          seller: {
+            ...listing.seller,
+            totalRating: (listing.seller.totalRating || 0) + reviewRating,
+            totalReviews: (listing.seller.totalReviews || 0) + 1
+          }
+        });
+      }
+      setShowReviewForm(false);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to submit review');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const handleDeleteReview = async () => {
+    if (!window.confirm('Delete this review?')) return;
+    try {
+      await axios.delete(`http://localhost:5000/api/reviews/${userReview._id}`, {
+        headers: { Authorization: `Bearer ${currentUser?.token}` }
+      });
+      setReviews(reviews.filter(r => r._id !== userReview._id));
+      setListing({
+        ...listing,
+        seller: {
+          ...listing.seller,
+          totalRating: Math.max((listing.seller.totalRating || 0) - userReview.rating, 0),
+          totalReviews: Math.max((listing.seller.totalReviews || 0) - 1, 0)
+        }
+      });
+      setUserReview(null);
+      setReviewComment('');
+      setReviewRating(5);
+    } catch (err) {
+      alert('Failed to delete review');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -200,7 +300,7 @@ export default function ListingDetail() {
             {/* Seller Section */}
             <div className="mt-10 pt-8 border-t border-gray-200">
               <h3 className="text-lg font-bold text-gray-900 mb-5 text-center sm:text-left">About the Seller</h3>
-              <div className="flex flex-col sm:flex-row items-center justify-between bg-blue-50 p-6 rounded-xl border border-blue-100">
+              <div className="flex flex-col sm:flex-row items-center justify-between bg-blue-50 p-6 rounded-xl border border-blue-100 mb-6">
                 <div className="flex items-center mb-4 sm:mb-0">
                   <div className="h-14 w-14 rounded-full bg-blue-200 flex items-center justify-center text-blue-700 font-bold text-xl mr-4 shadow-sm">
                     {sellerName.charAt(0).toUpperCase()}
@@ -210,10 +310,20 @@ export default function ListingDetail() {
                       {sellerName}
                       <ShieldCheck className="ml-1.5 h-5 w-5 text-green-500" />
                     </h4>
-                    <p className="text-sm text-gray-500 font-medium">Joined {joinedAt}</p>
-                    {seller.email && (
-                      <p className="text-sm text-gray-500 mt-0.5">{seller.email}</p>
-                    )}
+                    <div className="flex items-center gap-2 mt-1">
+                      {seller.totalReviews > 0 ? (
+                        <div className="flex items-center bg-white px-2 py-0.5 rounded shadow-sm">
+                          <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500 mr-1" />
+                          <span className="text-sm font-bold text-gray-800">
+                            {(seller.totalRating / seller.totalReviews).toFixed(1)}
+                          </span>
+                          <span className="text-xs text-gray-500 ml-1">({seller.totalReviews} reviews)</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded shadow-sm">No reviews yet</span>
+                      )}
+                      <p className="text-sm text-gray-500 font-medium">Joined {joinedAt}</p>
+                    </div>
                   </div>
                 </div>
 
@@ -227,6 +337,92 @@ export default function ListingDetail() {
                   </button>
                 </div>
               </div>
+
+              {/* Reviews List & Form Context */}
+              <div className="bg-gray-50 rounded-xl p-6 border border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-gray-900">Seller Reviews</h3>
+                  {currentUser && currentUser._id !== (seller._id || seller) && (
+                    <button 
+                      onClick={() => {
+                        if(userReview) {
+                          setReviewRating(userReview.rating);
+                          setReviewComment(userReview.comment);
+                        }
+                        setShowReviewForm(!showReviewForm);
+                      }}
+                      className="text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100"
+                    >
+                      {showReviewForm ? 'Cancel' : userReview ? 'Edit Your Review' : '+ Write a Review'}
+                    </button>
+                  )}
+                </div>
+
+                {showReviewForm && (
+                  <form onSubmit={handleReviewSubmit} className="mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Rating</label>
+                    <div className="flex gap-1 mb-4">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <Star 
+                          key={star}
+                          onClick={() => setReviewRating(star)}
+                          className={`h-6 w-6 cursor-pointer ${star <= reviewRating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
+                        />
+                      ))}
+                    </div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Comment</label>
+                    <textarea 
+                      value={reviewComment}
+                      onChange={e => setReviewComment(e.target.value)}
+                      required
+                      className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm mb-3 border p-2"
+                      rows={3}
+                      placeholder="How was your experience?"
+                    />
+                    <div className="flex justify-between items-center">
+                      {userReview && (
+                        <button type="button" onClick={handleDeleteReview} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition border border-transparent hover:border-red-100">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                      <button disabled={submittingReview} type="submit" className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 ml-auto flex items-center justify-center">
+                        {submittingReview ? <Loader className="h-4 w-4 animate-spin" /> : 'Submit'}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  {isLoadingReviews ? (
+                    <div className="flex justify-center p-4"><Loader className="h-5 w-5 animate-spin text-blue-500" /></div>
+                  ) : reviews.length > 0 ? (
+                    reviews.map((rev) => (
+                      <div key={rev._id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="bg-gray-100 rounded-full h-8 w-8 flex items-center justify-center text-gray-600 font-bold text-xs uppercase overflow-hidden">
+                              {rev.reviewer?.profilePicture ? <img src={rev.reviewer.profilePicture} className="h-full w-full object-cover" /> : rev.reviewer?.name?.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-gray-900 leading-none">{rev.reviewer?.name || 'User'}</p>
+                              <div className="flex mt-1">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star key={i} className={`h-3 w-3 ${i < rev.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-200'}`} />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          <span className="text-xs text-gray-400">{new Date(rev.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-gray-600 text-sm">{rev.comment}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500 italic text-center py-4">No reviews yet for this seller.</p>
+                  )}
+                </div>
+              </div>
+
             </div>
           </div>
         </div>

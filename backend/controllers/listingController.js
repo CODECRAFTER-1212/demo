@@ -8,8 +8,9 @@ const createListing = async (req, res, next) => {
   try {
     const { title, description, price, category, city, area } = req.body;
     let images = [];
-    
+
     // ImageKit images
+    console.log("FILES:", req.files);
     if (req.files && req.files.length > 0) {
       const uploadPromises = req.files.map((file) => {
         return imagekit.upload({
@@ -21,6 +22,8 @@ const createListing = async (req, res, next) => {
       const results = await Promise.all(uploadPromises);
       images = results.map(result => result.url);
     } else if (req.body.images) {
+      console.log("BODY IMAGES:", req.body.images);
+
       // In case URLs are passed directly (for testing/dummy data)
       images = Array.isArray(req.body.images) ? req.body.images : [req.body.images];
     }
@@ -97,7 +100,7 @@ const getListings = async (req, res, next) => {
 const getListing = async (req, res, next) => {
   try {
     const listing = await Listing.findById(req.params.id)
-      .populate('seller', 'name email phone createdAt');
+      .populate('seller', 'name email phone createdAt totalRating totalReviews');
 
     if (!listing) {
       res.status(404);
@@ -107,7 +110,7 @@ const getListing = async (req, res, next) => {
     // Only allow owner or admin to see non-approved listings, else return 404
     if (listing.status !== 'approved') {
       if (
-        !req.user || 
+        !req.user ||
         (req.user.id !== listing.seller._id.toString() && req.user.role !== 'admin')
       ) {
         res.status(404);

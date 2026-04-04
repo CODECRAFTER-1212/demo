@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, SlidersHorizontal, Loader, PackageOpen, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, Loader, PackageOpen, ChevronDown, ChevronUp, MapPin, Building2 } from 'lucide-react';
 import axios from 'axios';
 import ListingCard from '../components/ListingCard';
 
@@ -40,13 +40,24 @@ const dummyListings = [
 // Categories array
 const categories = ['All', 'Books', 'Electronics', 'Furniture', 'Stationery', 'Appliances', 'Medical', 'Surveying', 'Software', 'Apparel', 'Tools'];
 
+const placeholderTexts = [
+  "Search 'MacBook Air M1'...",
+  "Search 'HC Verma Physics'...",
+  "Search 'Scientific Calculator'...",
+  "Search 'Drafting Table'...",
+  "Search 'Lab Coat'..."
+];
+
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+  const [activeCity, setActiveCity] = useState('All');
+  const [activeCampus, setActiveCampus] = useState('All');
   const [realListings, setRealListings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isPriceOpen, setIsPriceOpen] = useState(false);
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
 
   const fetchListings = async () => {
     try {
@@ -68,18 +79,80 @@ export default function Home() {
       fetchListings();
     }, 15000);
 
-    return () => clearInterval(interval);
+    // Rotate placeholder text every 2 seconds
+    const placeholderInterval = setInterval(() => {
+      setPlaceholderIdx((prevIndex) => (prevIndex + 1) % placeholderTexts.length);
+    }, 2000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(placeholderInterval);
+    };
   }, []);
 
   // Combine: real listings first, then dummy ones
   const allListings = [...realListings, ...dummyListings];
 
-  // Filter logic
-  const filteredListings = allListings.filter((listing) => {
-    const matchesSearch = listing.title?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = activeCategory === 'All' || listing.category === activeCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Helper to normalize strings for display (Title Case)
+  const formatName = (str) => {
+    if (!str) return '';
+    return str.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  };
+
+  const uniqueCities = ['All', ...new Set(allListings.map(item => formatName(item.city)).filter(Boolean))];
+  const availableCampuses = activeCity === 'All' 
+    ? allListings.map(item => formatName(item.area)) 
+    : allListings.filter(item => formatName(item.city) === activeCity).map(item => formatName(item.area));
+  const uniqueCampuses = ['All', ...new Set(availableCampuses.filter(Boolean))];
+
+  // User Location (Fixed)
+  const userCity = "Bhopal";
+  const userArea = "MP Nagar";
+
+  // Filter and rank logic
+  const filteredListings = allListings
+    .filter((listing) => {
+      const matchesCategory = activeCategory === 'All' || listing.category === activeCategory;
+      const matchesCity = activeCity === 'All' || formatName(listing.city) === activeCity;
+      const matchesCampus = activeCampus === 'All' || formatName(listing.area) === activeCampus;
+      
+      const isFilterMatch = matchesCategory && matchesCity && matchesCampus;
+
+      if (!searchTerm) return isFilterMatch;
+
+      const searchLower = searchTerm.toLowerCase().trim();
+      const titleMatch = String(listing.title || "").toLowerCase().includes(searchLower) || false;
+      const cityMatch = String(listing.city || "").toLowerCase().includes(searchLower) || false;
+      const areaMatch = String(listing.area || "").toLowerCase().includes(searchLower) || false;
+      const matchesSearch = titleMatch || cityMatch || areaMatch;
+      
+      return matchesSearch && isFilterMatch;
+    })
+    .map((listing) => {
+      let score = 0;
+      const listingCity = listing.city?.toLowerCase() || "";
+      const listingArea = listing.area?.toLowerCase() || "";
+      const searchLower = searchTerm.toLowerCase();
+
+      // Higher score if the listing area matches the user area
+      if (listingArea === userArea.toLowerCase()) score += 100;
+      
+      // Medium score if the listing city matches the user city
+      if (listingCity === userCity.toLowerCase()) score += 50;
+
+      // Additional score if the search term matches
+      if (searchTerm) {
+        const titleMatch = listing.title?.toLowerCase().includes(searchLower) || false;
+        const cityMatch = listingCity.includes(searchLower) || false;
+        const areaMatch = listingArea.includes(searchLower) || false;
+        if (titleMatch || cityMatch || areaMatch) {
+          score += 10;
+        }
+      }
+
+      return { ...listing, rankingScore: score };
+    })
+    .sort((a, b) => b.rankingScore - a.rankingScore);
 
   return (
     <div className="space-y-8">
@@ -92,20 +165,63 @@ export default function Home() {
           The ultimate marketplace for students. Find cheap textbooks, electronics, and dorm essentials.
         </p>
 
-        <div className="max-w-2xl mx-auto flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-2 sm:gap-3">
+          {/* Location Dropdowns */}
+          <div className="flex flex-row gap-2 sm:gap-3 w-full md:w-auto shrink-0">
+            <div className="relative flex-1 md:w-36 lg:w-48 text-left">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MapPin className="h-4 sm:h-5 w-4 sm:w-5 text-gray-400" />
+              </div>
+              <select
+                className="block w-full pl-9 sm:pl-10 pr-8 py-2.5 sm:py-3 border border-transparent rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-white bg-white shadow-sm appearance-none cursor-pointer text-sm sm:text-base"
+                value={activeCity}
+                onChange={(e) => {
+                  setActiveCity(e.target.value);
+                  setActiveCampus('All'); // Reset campus when city changes
+                }}
+              >
+                {uniqueCities.map(city => (
+                  <option key={city} value={city}>{city === 'All' ? 'All Cities' : city}</option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 pr-2 sm:pr-3 flex items-center pointer-events-none">
+                <ChevronDown className="h-4 w-4 text-gray-400" />
+              </div>
+            </div>
+            
+            <div className="relative flex-1 md:w-36 lg:w-48 text-left">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Building2 className="h-4 sm:h-5 w-4 sm:w-5 text-gray-400" />
+              </div>
+              <select
+                className="block w-full pl-9 sm:pl-10 pr-8 py-2.5 sm:py-3 border border-transparent rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-white bg-white shadow-sm appearance-none cursor-pointer text-sm sm:text-base"
+                value={activeCampus}
+                onChange={(e) => setActiveCampus(e.target.value)}
+              >
+                {uniqueCampuses.map(campus => (
+                  <option key={campus} value={campus}>{campus === 'All' ? 'All Campuses' : campus}</option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 pr-2 sm:pr-3 flex items-center pointer-events-none">
+                <ChevronDown className="h-4 w-4 text-gray-400" />
+              </div>
+            </div>
+          </div>
+
+          {/* Search Input & Button */}
+          <div className="relative flex-1 w-full">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-gray-400" />
             </div>
             <input
               type="text"
-              className="block w-full pl-10 pr-3 py-3 border border-transparent rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent sm:text-sm bg-white shadow-sm transition-shadow"
-              placeholder="What are you looking for?"
+              className="block w-full pl-10 pr-3 py-2.5 sm:py-3 border border-transparent rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent text-sm sm:text-base bg-white shadow-sm transition-all duration-500"
+              placeholder={placeholderTexts[placeholderIdx]}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <button className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-colors">
+          <button className="inline-flex shrink-0 w-full md:w-auto items-center justify-center px-6 py-2.5 sm:py-3 border border-transparent text-base font-medium rounded-lg text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-colors">
             Search
           </button>
         </div>
@@ -114,7 +230,7 @@ export default function Home() {
       {/* Filters & Grid Section */}
       <div className="flex flex-col md:flex-row gap-8">
         {/* Sidebar Filters */}
-        <div className="w-full md:w-64 flex-shrink-0 space-y-4 md:space-y-6">
+        <div className="w-full md:w-64 shrink-0 space-y-4 md:space-y-6">
           <div className="bg-white p-4 md:p-5 rounded-xl shadow-sm border border-gray-200">
             <button
               onClick={() => setIsCategoryOpen(!isCategoryOpen)}

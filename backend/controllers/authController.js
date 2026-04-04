@@ -16,8 +16,8 @@ const registerUser = async (req, res, next) => {
     const { name, email, rollnumber, password, phone, city, campus } = req.body;
 
     // Check if user exists
-    const userExists = await User.findOne({ 
-      $or: [{ email }, { rollnumber }] 
+    const userExists = await User.findOne({
+      $or: [{ email }, { rollnumber }]
     });
 
     if (userExists) {
@@ -66,8 +66,8 @@ const loginUser = async (req, res, next) => {
     const { identifier, password } = req.body;
 
     // Check for user by email or rollnumber
-    const user = await User.findOne({ 
-      $or: [{ email: identifier }, { rollnumber: identifier }] 
+    const user = await User.findOne({
+      $or: [{ email: identifier }, { rollnumber: identifier }]
     }).select('+password');
 
     if (user && (await user.matchPassword(password))) {

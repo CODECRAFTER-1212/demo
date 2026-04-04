@@ -42,6 +42,36 @@ const userSchema = new mongoose.Schema(
       enum: ['user', 'admin'],
       default: 'user',
     },
+    profilePicture: {
+      type: String,
+      default: '',
+    },
+    aadhaarCard: {
+      type: String,
+      default: '',
+      select: false, // Do not expose publicly by default
+    },
+    collegeId: {
+      type: String,
+      default: '',
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    otp: {
+      code: { type: String, select: false },
+      expiresAt: { type: Date, select: false },
+      attempts: { type: Number, default: 0, select: false },
+    },
+    totalRating: {
+      type: Number,
+      default: 0,
+    },
+    totalReviews: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
