@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useLocation, Link, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import axios from 'axios';
 import { ArrowLeft, Send, MessageCircle, ShieldCheck, Loader, Lock } from 'lucide-react';
 
 const BACKEND = 'http://localhost:5000';
+const POLL_INTERVAL = 3000; // Poll every 3 seconds as fallback
 
 export default function Chat() {
   const { listingId, sellerId } = useParams();
@@ -21,6 +22,7 @@ export default function Chat() {
 
   const socketRef = useRef(null);
   const bottomRef = useRef(null);
+  const messageIdsRef = useRef(new Set()); // for deduplication
 
   // Get logged-in user info from localStorage (saved as 'userInfo' by Login page)
   const userInfoRaw = localStorage.getItem('userInfo');
@@ -34,23 +36,57 @@ export default function Chat() {
     }
   }, []);
 
-  // Load message history
-  useEffect(() => {
+  // Merge new messages without duplicates
+  const mergeMessages = useCallback((newMsgs) => {
+    setMessages(prev => {
+      const merged = [...prev];
+      for (const msg of newMsgs) {
+        const id = msg._id?.toString();
+        if (id && !messageIdsRef.current.has(id)) {
+          messageIdsRef.current.add(id);
+          merged.push(msg);
+        }
+      }
+      return merged;
+    });
+  }, []);
+
+  // Fetch messages from server
+  const fetchMessages = useCallback(async (silent = false) => {
     if (!token) return;
-    const fetchHistory = async () => {
-      try {
-        const { data } = await axios.get(`${BACKEND}/api/chat/${listingId}/${sellerId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setMessages(data.messages || []);
-      } catch (err) {
+    try {
+      const { data } = await axios.get(`${BACKEND}/api/chat/${listingId}/${sellerId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const msgs = data.messages || [];
+      if (!silent) {
+        // First load: set all messages
+        messageIdsRef.current = new Set(msgs.map(m => m._id?.toString()).filter(Boolean));
+        setMessages(msgs);
+        setIsLoading(false);
+      } else {
+        // Polling: only add new ones
+        mergeMessages(msgs);
+      }
+    } catch (err) {
+      if (!silent) {
         setError('Could not load chat history.');
-      } finally {
         setIsLoading(false);
       }
-    };
-    fetchHistory();
-  }, [listingId, sellerId, token]);
+    }
+  }, [listingId, sellerId, token, mergeMessages]);
+
+  // Load message history on mount
+  useEffect(() => {
+    fetchMessages(false);
+  }, [fetchMessages]);
+
+  // Polling fallback — fetch new messages every 3 seconds
+  useEffect(() => {
+    if (!token) return;
+    const interval = setInterval(() => fetchMessages(true), POLL_INTERVAL);
+    return () => clearInterval(interval);
+  }, [fetchMessages, token]);
 
   // Setup Socket.io
   useEffect(() => {
@@ -58,7 +94,6 @@ export default function Chat() {
 
     const socket = io(BACKEND, {
       auth: { token },
-      // Don't force websocket-only — let Socket.io start with polling then upgrade
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
@@ -71,7 +106,12 @@ export default function Chat() {
     });
 
     socket.on('receive_message', (msg) => {
-      setMessages((prev) => [...prev, msg]);
+      // Only add messages from the OTHER person via socket
+      // Sender's own message is added optimistically in sendMessage()
+      const senderId = msg.sender?._id?.toString() || msg.sender?.toString();
+      if (senderId !== currentUser._id?.toString()) {
+        mergeMessages([msg]);
+      }
     });
 
     socket.on('disconnect', () => setConnected(false));
@@ -91,14 +131,37 @@ export default function Chat() {
   }, [messages]);
 
   const sendMessage = () => {
-    if (!text.trim() || !socketRef.current) return;
-    socketRef.current.emit('send_message', {
-      listingId,
-      sellerId,
-      receiverId: sellerId,
-      text: text.trim(),
-    });
+    if (!text.trim()) return;
+
+    const trimmedText = text.trim();
     setText('');
+
+    // ✅ Optimistic update — show message immediately for sender
+    const tempId = `temp_${Date.now()}`;
+    const optimisticMsg = {
+      _id: tempId,
+      text: trimmedText,
+      sender: { _id: currentUser._id, name: currentUser.name },
+      createdAt: new Date().toISOString(),
+    };
+    messageIdsRef.current.add(tempId);
+    setMessages(prev => [...prev, optimisticMsg]);
+
+    // Send via Socket.IO if connected, else just rely on polling
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('send_message', {
+        listingId,
+        sellerId,
+        receiverId: sellerId,
+        text: trimmedText,
+      });
+    } else {
+      // Fallback: send via HTTP API if socket not connected
+      axios.post(`${BACKEND}/api/chat/${listingId}/${sellerId}`,
+        { text: trimmedText },
+        { headers: { Authorization: `Bearer ${token}` } }
+      ).catch(console.error);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -220,7 +283,7 @@ export default function Chat() {
         </div>
         <button
           onClick={sendMessage}
-          disabled={!text.trim() || !connected}
+          disabled={!text.trim()}
           className="flex-shrink-0 h-11 w-11 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white flex items-center justify-center transition-colors shadow-sm"
         >
           <Send className="h-5 w-5" />

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { createWorker } from 'tesseract.js';
 import { CheckCircle2, ShieldCheck, Mail, Upload, Camera, FileText, Loader, Pencil, X, Check, ScanLine, AlertCircle } from 'lucide-react';
+import BACKEND from '../config';
 
 export default function ProfileCompletion() {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ export default function ProfileCompletion() {
 
   const fetchProfile = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/profile', {
+      const { data } = await axios.get(`${BACKEND}/api/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setProfile(data);
@@ -101,7 +102,7 @@ export default function ProfileCompletion() {
   const handleSendOtp = async () => {
     setOtpLoading(true);
     try {
-      await axios.post('http://localhost:5000/api/profile/send-otp', {}, {
+      await axios.post(`${BACKEND}/api/profile/send-otp`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setOtpStep(1);
@@ -116,7 +117,7 @@ export default function ProfileCompletion() {
     if (!otp) return;
     setOtpLoading(true);
     try {
-      await axios.post('http://localhost:5000/api/profile/verify-otp', { otp }, {
+      await axios.post(`${BACKEND}/api/profile/verify-otp`, { otp }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setOtpStep(2);
@@ -196,7 +197,7 @@ export default function ProfileCompletion() {
       if (aadhaarFile) formData.append('aadhaarCard', aadhaarFile);
       if (collegeIdFile) formData.append('collegeId', collegeIdFile);
 
-      await axios.put('http://localhost:5000/api/profile', formData, {
+      await axios.put(`${BACKEND}/api/profile`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -232,7 +233,7 @@ export default function ProfileCompletion() {
       if (editName !== profile.name) formData.append('name', editName);
       if (editPhone !== profile.phone) formData.append('phone', editPhone);
 
-      await axios.put('http://localhost:5000/api/profile', formData, {
+      await axios.put(`${BACKEND}/api/profile`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'

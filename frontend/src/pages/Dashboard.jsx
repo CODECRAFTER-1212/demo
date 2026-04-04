@@ -6,7 +6,7 @@ import {
   ShoppingCart, Package, BookmarkX, Loader, Mail, Phone, Hash, ArrowLeft, MapPin, Building
 } from 'lucide-react';
 
-const BACKEND = 'http://localhost:5000';
+import BACKEND from '../config';
 
 export default function Dashboard() {
   const navigate = useNavigate();

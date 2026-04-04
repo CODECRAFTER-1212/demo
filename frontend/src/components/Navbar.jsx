@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ShoppingBag, User, PlusCircle, LogIn, LogOut, MessageCircle, Bookmark, Heart } from 'lucide-react';
+import BACKEND from '../config';
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -83,7 +84,7 @@ export default function Navbar() {
                 <button
                   onClick={async () => {
                     try {
-                      const { data } = await require('axios').default.get('http://localhost:5000/api/profile', {
+                      const { data } = await require('axios').default.get(`${BACKEND}/api/profile`, {
                         headers: { Authorization: `Bearer ${user.token}` }
                       });
                       if (data.percentage >= 70) {

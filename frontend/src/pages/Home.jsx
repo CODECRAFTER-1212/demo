@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, Filter, SlidersHorizontal, Loader, PackageOpen, ChevronDown, ChevronUp, MapPin, Building2 } from 'lucide-react';
 import axios from 'axios';
 import ListingCard from '../components/ListingCard';
+import BACKEND from '../config';
 
 // Demo/Dummy listings shown as filler when DB is empty or always shown after real ones
 const dummyListings = [
@@ -61,7 +62,7 @@ export default function Home() {
 
   const fetchListings = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/listings');
+      const { data } = await axios.get(`${BACKEND}/api/listings`);
       setRealListings(data.listings || []);
     } catch (error) {
       console.error('Failed to fetch listings', error);

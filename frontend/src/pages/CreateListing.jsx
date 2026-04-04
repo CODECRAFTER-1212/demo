@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { UploadCloud, CheckCircle, ArrowLeft, IndianRupee, Tag, MapPin, Type, FileText, Globe, Info } from 'lucide-react';
 import axios from 'axios';
+import BACKEND from '../config';
 
 export default function CreateListing() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,7 +32,7 @@ export default function CreateListing() {
           navigate('/login');
           return;
         }
-        const { data } = await axios.get('http://localhost:5000/api/profile', {
+        const { data } = await axios.get(`${BACKEND}/api/profile`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (data.percentage < 70) {
@@ -77,7 +78,7 @@ export default function CreateListing() {
       const userInfoStr = localStorage.getItem('userInfo');
       const token = userInfoStr ? JSON.parse(userInfoStr).token : '';
 
-      await axios.post('http://localhost:5000/api/listings', data, {
+      await axios.post(`${BACKEND}/api/listings`, data, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`

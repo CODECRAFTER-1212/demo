@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { MessageCircle, ArrowLeft, Loader, PackageOpen, ChevronRight } from 'lucide-react';
 
-const BACKEND = 'http://localhost:5000';
+import BACKEND from '../config';
 
 export default function ChatInbox() {
   const navigate = useNavigate();

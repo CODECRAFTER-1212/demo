@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
 import axios from 'axios';
+import BACKEND from '../config';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ export default function Register() {
     setIsLoading(true);
     setErrorMsg('');
     try {
-      await axios.post('http://localhost:5000/api/auth/register', formData);
+      await axios.post(`${BACKEND}/api/auth/register`, formData);
       setIsLoading(false);
       navigate('/login');
     } catch (error) {

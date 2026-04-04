@@ -3,6 +3,7 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, Tag, ShieldCheck, Phone, MessageCircle, Loader, AlertCircle, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
 import { Star, Trash2, Edit } from 'lucide-react';
+import BACKEND from '../config';
 
 export default function ListingDetail() {
   const { id } = useParams();
@@ -80,7 +81,7 @@ export default function ListingDetail() {
       try {
         setIsLoading(true);
         setError(null);
-        const { data } = await axios.get(`http://localhost:5000/api/listings/${id}`);
+        const { data } = await axios.get(`${BACKEND}/api/listings/${id}`);
         setListing(data);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load listing. It may not exist or has been removed.');
@@ -101,7 +102,7 @@ export default function ListingDetail() {
     const fetchRev = async () => {
       try {
         setIsLoadingReviews(true);
-        const { data } = await axios.get(`http://localhost:5000/api/reviews/${sellerId}`);
+        const { data } = await axios.get(`${BACKEND}/api/reviews/${sellerId}`);
         setReviews(data);
         if (currentUser) {
           const myRev = data.find(r => r.reviewer._id === currentUser._id);
@@ -125,7 +126,7 @@ export default function ListingDetail() {
       const headers = { Authorization: `Bearer ${currentUser?.token}` };
       if (userReview) {
         // Update review
-        const { data } = await axios.put(`http://localhost:5000/api/reviews/${userReview._id}`, {
+        const { data } = await axios.put(`${BACKEND}/api/reviews/${userReview._id}`, {
           rating: reviewRating,
           comment: reviewComment
         }, { headers });
@@ -133,12 +134,12 @@ export default function ListingDetail() {
         setUserReview(data);
       } else {
         // Create review
-        const { data } = await axios.post(`http://localhost:5000/api/reviews/${sellerId}`, {
+        const { data } = await axios.post(`${BACKEND}/api/reviews/${sellerId}`, {
           rating: reviewRating,
           comment: reviewComment
         }, { headers });
         // Refresh exactly to grab populated reviewer
-        const fetchAll = await axios.get(`http://localhost:5000/api/reviews/${sellerId}`);
+        const fetchAll = await axios.get(`${BACKEND}/api/reviews/${sellerId}`);
         setReviews(fetchAll.data);
         setUserReview(fetchAll.data.find(r => r.reviewer._id === currentUser._id));
         // Soft update local seller score for immediate UI feedback
@@ -162,7 +163,7 @@ export default function ListingDetail() {
   const handleDeleteReview = async () => {
     if (!window.confirm('Delete this review?')) return;
     try {
-      await axios.delete(`http://localhost:5000/api/reviews/${userReview._id}`, {
+      await axios.delete(`${BACKEND}/api/reviews/${userReview._id}`, {
         headers: { Authorization: `Bearer ${currentUser?.token}` }
       });
       setReviews(reviews.filter(r => r._id !== userReview._id));
