@@ -9,9 +9,14 @@ import App from './App.jsx'
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isLoginPath = error.config?.url?.includes('/api/auth/login');
+    if (error.response?.status === 401 && !isLoginPath) {
       localStorage.removeItem('userInfo');
-      window.location.href = '/login';
+      // Only redirect if we are not already on the login page
+      // (This prevents infinite loops and loss of error messages)
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
