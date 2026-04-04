@@ -59,6 +59,8 @@ export default function Home() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isPriceOpen, setIsPriceOpen] = useState(false);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
 
   const fetchListings = async () => {
     try {
@@ -117,7 +119,11 @@ export default function Home() {
       const matchesCity = activeCity === 'All' || formatName(listing.city) === activeCity;
       const matchesCampus = activeCampus === 'All' || formatName(listing.area) === activeCampus;
       
-      const isFilterMatch = matchesCategory && matchesCity && matchesCampus;
+      const price = Number(listing.price) || 0;
+      const matchesMinPrice = minPrice === '' || price >= Number(minPrice);
+      const matchesMaxPrice = maxPrice === '' || price <= Number(maxPrice);
+      
+      const isFilterMatch = matchesCategory && matchesCity && matchesCampus && matchesMinPrice && matchesMaxPrice;
 
       if (!searchTerm) return isFilterMatch;
 
@@ -277,12 +283,27 @@ export default function Home() {
             </button>
             <div className={`mt-4 space-y-4 ${isPriceOpen ? 'block' : 'hidden'} md:block transition-all`}>
               <div className="flex gap-2 items-center">
-                <input type="number" placeholder="Min" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                <input 
+                  type="number" 
+                  placeholder="Min" 
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                />
                 <span className="text-gray-500">-</span>
-                <input type="number" placeholder="Max" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+                <input 
+                  type="number" 
+                  placeholder="Max" 
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                />
               </div>
-              <button className="w-full bg-blue-50 text-blue-600 py-2.5 rounded-lg text-sm font-bold hover:bg-blue-100 transition-colors">
-                Apply Filters
+              <button 
+                onClick={() => { setMinPrice(''); setMaxPrice(''); }}
+                className="w-full bg-blue-50 text-blue-600 py-2.5 rounded-lg text-sm font-bold hover:bg-blue-100 transition-colors"
+              >
+                Clear Price Filter
               </button>
             </div>
           </div>
@@ -321,7 +342,14 @@ export default function Home() {
               <h3 className="text-lg font-medium text-gray-900">No listings found</h3>
               <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filters.</p>
               <button
-                onClick={() => { setSearchTerm(''); setActiveCategory('All'); }}
+                onClick={() => { 
+                  setSearchTerm(''); 
+                  setActiveCategory('All'); 
+                  setActiveCity('All'); 
+                  setActiveCampus('All');
+                  setMinPrice('');
+                  setMaxPrice('');
+                }}
                 className="mt-4 text-sm font-medium text-blue-600 hover:text-blue-500"
               >
                 Clear all filters
